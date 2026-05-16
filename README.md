@@ -132,7 +132,7 @@ SHL-AI_Agent/
 ├── README.md
 ├── venv/
 
-ENVIRONMENT SETUP-
+##. ENVIRONMENT SETUP-
 Step 1 — Open Command Prompt
 
 Navigate to project folder:
@@ -162,7 +162,7 @@ python-dotenv	         Environment variables
 pydantic	             Request validation
 
 
-CATALOG PREPARATION
+##. CATALOG PREPARATION
 
 The SHL catalog data is stored inside:
 
@@ -178,10 +178,9 @@ remote support
 adaptive support
 descriptions
 
-RETRIEVER SYSTEM
-File:
+##. RETRIEVER SYSTEM
 
-retriever.py
+File: retriever.py
 
 Responsibilities:
 
@@ -214,11 +213,10 @@ leadership → OPQ boost
 graduate → Graduate Scenarios boost
 safety → DSI boost
 healthcare → HIPAA boost
-Phase 5 — FastAPI Backend
 
-File:
+FastAPI Backend
 
-app.py
+File: app.py
 
 Responsibilities:
 
@@ -289,3 +287,4 @@ safety-critical industrial roles
 Excel/Word admin hiring
 including multi-turn refinement conversations.
 
+Name - Adurthi Mahathi Chinmayee
