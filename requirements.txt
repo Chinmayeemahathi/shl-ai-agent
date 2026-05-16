@@ -7,4 +7,4 @@ pydantic
 requests
 beautifulsoup4
 python-dotenv
-torch==2.2.2
+torch
