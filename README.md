@@ -109,7 +109,7 @@ Example:
 
 ---
 
-## 6. Safety & Refusal Handling
+## 6. Safety & Refusal Handling 
 
 The system avoids:
 - legal advice
@@ -132,4 +132,160 @@ SHL-AI_Agent/
 ├── README.md
 ├── venv/
 
-Name- Adurthi Mahathi Chinmayee
+ENVIRONMENT SETUP-
+Step 1 — Open Command Prompt
+
+Navigate to project folder:
+
+cd D:\SHL-AI_Agent
+Step 2 — Create Virtual Environment
+python -m venv venv
+Step 3 — Activate Virtual Environment
+
+Windows:
+venv\Scripts\activate.bat
+
+After activation:
+(venv) appears in terminal.
+
+Install required libraries:
+pip install fastapi uvicorn requests beautifulsoup4 sentence-transformers faiss-cpu python-dotenv pydantic
+
+Package	Purpose
+fastapi       	Backend API
+uvicorn	        Runs FastAPI server
+requests	      HTTP requests
+beautifulsoup4	HTML parsing
+sentence-transformers	Embedding generation
+faiss-cpu	Vector       similarity search
+python-dotenv	         Environment variables
+pydantic	             Request validation
+
+
+CATALOG PREPARATION
+
+The SHL catalog data is stored inside:
+
+catalog.json
+
+This file contains:
+
+assessment names
+duration
+URLs
+test type
+remote support
+adaptive support
+descriptions
+
+RETRIEVER SYSTEM
+File:
+
+retriever.py
+
+Responsibilities:
+
+load catalog
+create embeddings
+build FAISS index
+semantic retrieval
+ranking improvements
+Embedding Model
+
+Used model:
+
+all-MiniLM-L6-v2
+from Sentence Transformers.
+FAISS Vector Search
+FAISS stores vector embeddings for fast similarity search.
+
+Workflow:
+
+Convert catalog descriptions into embeddings
+Store vectors in FAISS index
+Convert user query into embedding
+Retrieve nearest matching assessments
+Ranking Improvements
+Custom boosting logic improves retrieval quality.
+
+Examples:
+
+leadership → OPQ boost
+graduate → Graduate Scenarios boost
+safety → DSI boost
+healthcare → HIPAA boost
+Phase 5 — FastAPI Backend
+
+File:
+
+app.py
+
+Responsibilities:
+
+API endpoints
+multi-turn conversation handling
+clarification logic
+comparison logic
+refinement logic
+safety refusals
+API Endpoints
+Health Endpoint
+
+GET /health:
+
+Response:
+
+{
+  "status": "ok"
+}
+Chat Endpoint
+
+
+POST /chat:
+
+Request format:
+
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Need leadership assessments"
+    }
+  ]
+}
+Example Response
+{
+  "reply": "Recommended assessments: OPQ32r, OPQ Leadership Report",
+  "recommendations": [
+    {
+      "name": "Occupational Personality Questionnaire OPQ32r",
+      "url": "https://www.shl.com/",
+      "duration": "25 minutes"
+    }
+  ],
+  "end_of_conversation": false
+}
+Phase 6 — Running the Application
+
+Start server:
+uvicorn app:app --reload
+
+Server runs on:
+http://127.0.0.1:8000
+
+Swagger UI:
+
+http://127.0.0.1:8000/docs
+{{{Testing}}}
+
+The system was tested against:
+
+leadership hiring
+graduate hiring
+Rust engineering
+healthcare admin
+contact center
+safety-critical industrial roles
+Excel/Word admin hiring
+including multi-turn refinement conversations.
+
