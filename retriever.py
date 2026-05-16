@@ -1,6 +1,10 @@
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 import json
 import faiss
 import numpy as np
+
 
 from sentence_transformers import SentenceTransformer
 
@@ -8,7 +12,7 @@ from sentence_transformers import SentenceTransformer
 # LOAD MODEL
 # -----------------------------------
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
 
 # -----------------------------------
 # LOAD CATALOG
