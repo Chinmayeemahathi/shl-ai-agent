@@ -1,5 +1,15 @@
 # SHL AI Recommendation System
 
+---
+title: SHL AI Agent
+emoji: 🤖
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_file: app.py
+pinned: false
+---
+
 ## 📌 Overview
 This project is a conversational AI-powered recommendation system built for the SHL AI Internship Assignment.
 
@@ -106,3 +116,32 @@ SHL-AI_Agent/
 ├── requirements.txt
 ├── Dockerfile
 └── README.md
+
+⚙️ Environment Setup
+Step 1: Create Virtual Environment
+python -m venv venv
+Step 2: Activate Virtual Environment
+venv\Scripts\activate.bat
+Step 3: Install Dependencies
+pip install -r requirements.txt
+🚀 Run Application
+uvicorn app:app --reload
+
+Local API:
+
+http://127.0.0.1:8000
+
+Swagger:
+
+http://127.0.0.1:8000/docs
+🧪 Testing Coverage
+
+Validated against:
+
+Leadership hiring
+Graduate hiring
+Rust engineering roles
+Contact center roles
+Healthcare administration
+Safety-critical manufacturing
+Admin assistant screening
