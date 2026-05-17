@@ -1,10 +1,9 @@
 fastapi
 uvicorn
-sentence-transformers
 faiss-cpu
 numpy
 pydantic
 requests
 beautifulsoup4
 python-dotenv
-torch
+google-generativeai

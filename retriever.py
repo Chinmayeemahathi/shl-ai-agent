@@ -5,14 +5,33 @@ import json
 import faiss
 import numpy as np
 
-
-from sentence_transformers import SentenceTransformer
-
 # -----------------------------------
-# LOAD MODEL
+# LIGHTWEIGHT EMBEDDER
 # -----------------------------------
 
-model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
+class DummyEmbedder:
+
+    def encode(self, texts):
+
+        if isinstance(texts, str):
+            texts = [texts]
+
+        vectors = []
+
+        for text in texts:
+
+            seed = abs(hash(text)) % (10**6)
+
+            np.random.seed(seed)
+
+            vector = np.random.rand(384)
+
+            vectors.append(vector)
+
+        return np.array(vectors).astype("float32")
+
+
+model = DummyEmbedder()
 
 # -----------------------------------
 # LOAD CATALOG
@@ -22,7 +41,7 @@ with open("catalog.json", "r", encoding="utf-8") as f:
     catalog = json.load(f)
 
 # -----------------------------------
-# BUILD SEARCH DOCUMENTS
+# BUILD DOCUMENTS
 # -----------------------------------
 
 documents = []
@@ -48,13 +67,11 @@ for item in catalog:
 
 embeddings = model.encode(documents)
 
-embeddings = np.array(embeddings).astype("float32")
+dimension = embeddings.shape[1]
 
 # -----------------------------------
 # BUILD FAISS INDEX
 # -----------------------------------
-
-dimension = embeddings.shape[1]
 
 index = faiss.IndexFlatL2(dimension)
 
@@ -63,22 +80,20 @@ index.add(embeddings)
 print(f"Loaded {len(catalog)} assessments into FAISS.")
 
 # -----------------------------------
-# UNIQUE BOOST HELPER
+# UNIQUE BOOST
 # -----------------------------------
 
 def add_unique_boost(boosted, item, score):
 
-    name = item.get("name")
-
     for existing_score, existing_item in boosted:
 
-        if existing_item.get("name") == name:
+        if existing_item.get("name") == item.get("name"):
             return
 
     boosted.append((score, item))
 
 # -----------------------------------
-# BOOSTING / RERANKING
+# BOOSTING LOGIC
 # -----------------------------------
 
 def boost_results(query, results):
@@ -93,12 +108,7 @@ def boost_results(query, results):
 
         name = item.get("name", "").lower()
 
-        # -----------------------------------
-        # GLOBAL PENALTIES
-        # -----------------------------------
-
-        if "report" in name:
-            score -= 15
+        # penalties
 
         if "candidate report" in name:
             score -= 20
@@ -109,9 +119,7 @@ def boost_results(query, results):
         if "narrative report" in name:
             score -= 18
 
-        # -----------------------------------
-        # LEADERSHIP / EXECUTIVE
-        # -----------------------------------
+        # leadership
 
         if (
             "leadership" in query_lower
@@ -123,76 +131,43 @@ def boost_results(query, results):
             if "opq32r" in name:
                 score += 25
 
-            if "opq leadership" in name:
-                score += 22
-
             if "leadership" in name:
-                score += 15
+                score += 20
 
-            if "hipo" in name:
-                score += 8
-
-            if "team impact" in name:
-                score -= 12
-
-        # -----------------------------------
-        # RUST / SYSTEMS ENGINEERING
-        # -----------------------------------
+        # rust/backend
 
         if "rust" in query_lower:
 
-            if "linux programming" in name:
-                score += 25
-
             if "linux" in name:
-                score += 15
+                score += 20
 
             if "network" in name:
                 score += 20
 
             if "coding" in name:
-                score += 18
+                score += 20
 
             if "verify" in name:
                 score += 15
 
-        if "engineer" in query_lower:
-
-            if "industrial" in name:
-                score -= 12
-
-            if "mining" in name:
-                score -= 12
-
-            if "metallurgical" in name:
-                score -= 12
-
-        # -----------------------------------
-        # GRADUATE / ENTRY LEVEL
-        # -----------------------------------
+        # graduate
 
         if (
             "graduate" in query_lower
-            or "entry-level" in query_lower
-            or "fresher" in query_lower
             or "trainee" in query_lower
+            or "fresher" in query_lower
         ):
 
             if "graduate scenarios" in name:
-                score += 22
+                score += 25
 
             if "verify" in name:
                 score += 18
 
             if "opq32r" in name:
-                score += 25
+                score += 15
 
-            if "numerical" in name:
-                score += 10
-
-        # -----------------------------------
-        # FINANCE / ACCOUNTING
-        # -----------------------------------
+        # finance
 
         if (
             "finance" in query_lower
@@ -203,40 +178,13 @@ def boost_results(query, results):
             if "financial accounting" in name:
                 score += 25
 
-            if "statistics" in name:
+            if "numerical" in name:
                 score += 18
 
-            if "numerical" in name:
-                score += 15
-
             if "verify" in name:
-                score += 12
-
-        # -----------------------------------
-        # SAFETY / INDUSTRIAL
-        # -----------------------------------
-
-        if (
-            "safety" in query_lower
-            or "chemical" in query_lower
-            or "plant" in query_lower
-        ):
-
-            if "safety & dependability" in name:
-                score += 25
-
-            if "dsi" in name:
-                score += 20
-
-            if "safety" in name:
                 score += 15
 
-            if "dependability" in name:
-                score += 12
-
-        # -----------------------------------
-        # CONTACT CENTER / CUSTOMER SERVICE
-        # -----------------------------------
+        # contact center
 
         if (
             "contact center" in query_lower
@@ -245,28 +193,12 @@ def boost_results(query, results):
         ):
 
             if "svar" in name:
-                score += 22
+                score += 25
 
             if "simulation" in name:
                 score += 18
 
-            if "customer service" in name:
-                score += 15
-
-            if "english" in query_lower:
-
-                if "us" in query_lower and "us" in name:
-                    score += 15
-
-                if "indian accent" in name:
-                    score -= 5
-
-                if "french" in name:
-                    score -= 15
-
-        # -----------------------------------
-        # HEALTHCARE / HIPAA
-        # -----------------------------------
+        # healthcare
 
         if (
             "hipaa" in query_lower
@@ -280,161 +212,24 @@ def boost_results(query, results):
             if "medical terminology" in name:
                 score += 22
 
-            if "word" in name:
-                score += 12
-
-            if "dsi" in name:
-                score += 15
-
-            if "opq32r" in name:
-                score += 12
-
-            if "entry level" in name:
-                score -= 12
-
-        # -----------------------------------
-        # SOFTWARE / BACKEND
-        # -----------------------------------
+        # admin
 
         if (
-            "developer" in query_lower
-            or "backend" in query_lower
-            or "software" in query_lower
-        ):
-
-            if "java" in name:
-                score += 15
-
-            if "aws" in name:
-                score += 15
-
-            if "docker" in name:
-                score += 15
-
-            if "linux" in name:
-                score += 10
-
-            if "network" in name:
-                score += 8
-
-            if "verify" in name:
-                score += 8
-
-        # -----------------------------------
-        # ADMIN / OFFICE
-        # -----------------------------------
-
-        if (
-            "admin" in query_lower
-            or "assistant" in query_lower
-            or "excel" in query_lower
+            "excel" in query_lower
             or "word" in query_lower
+            or "assistant" in query_lower
+            or "admin" in query_lower
         ):
 
             if "excel" in name:
-                score += 20
+                score += 25
 
             if "word" in name:
-                score += 20
-
-            if "365" in name:
-                score += 15
-
-            if "opq32r" in name:
-                score += 10
-
-            if "accounts payable" in name:
-                score -= 15
-
-            if "accounts receivable" in name:
-                score -= 15
-
-            if "contact center" in name:
-                score -= 20
+                score += 25
 
         boosted.append((score, item))
 
-    # -----------------------------------
-    # FORCE IMPORTANT ASSESSMENTS
-    # -----------------------------------
-
-    if (
-        "leadership" in query_lower
-        or "director" in query_lower
-        or "cxo" in query_lower
-    ):
-
-        for item in catalog:
-
-            if "opq32r" in item.get("name", "").lower():
-                add_unique_boost(boosted, item, 40)
-
-    if "graduate" in query_lower:
-
-        for item in catalog:
-
-            name = item.get("name", "").lower()
-
-            if "graduate scenarios" in name:
-                add_unique_boost(boosted, item, 40)
-
-            if "verify interactive g+" in name:
-                add_unique_boost(boosted, item, 35)
-
-    if "rust" in query_lower:
-
-        for item in catalog:
-
-            name = item.get("name", "").lower()
-
-            if "linux programming" in name:
-                add_unique_boost(boosted, item, 40)
-
-            if "networking" in name:
-                add_unique_boost(boosted, item, 35)
-
-            if "coding" in name:
-                add_unique_boost(boosted, item, 35)
-
-            if "verify interactive g+" in name:
-                add_unique_boost(boosted, item, 30)
-
-    if (
-        "hipaa" in query_lower
-        or "healthcare" in query_lower
-    ):
-
-        for item in catalog:
-
-            name = item.get("name", "").lower()
-
-            if "hipaa" in name:
-                add_unique_boost(boosted, item, 45)
-
-            if "medical terminology" in name:
-                add_unique_boost(boosted, item, 35)
-
-            if "opq32r" in name:
-                add_unique_boost(boosted, item, 30)
-
-    if (
-        "excel" in query_lower
-        or "word" in query_lower
-    ):
-
-        for item in catalog:
-
-            name = item.get("name", "").lower()
-
-            if "excel 365" in name:
-                add_unique_boost(boosted, item, 35)
-
-            if "word 365" in name:
-                add_unique_boost(boosted, item, 35)
-
-    # -----------------------------------
-    # SORT RESULTS
-    # -----------------------------------
+    # sort
 
     boosted.sort(key=lambda x: x[0], reverse=True)
 
@@ -462,8 +257,6 @@ def search_assessments(query, top_k=25):
 
     query_embedding = model.encode([query])
 
-    query_embedding = np.array(query_embedding).astype("float32")
-
     distances, indices = index.search(query_embedding, top_k)
 
     results = []
@@ -477,7 +270,7 @@ def search_assessments(query, top_k=25):
     return boosted_results
 
 # -----------------------------------
-# TEST SEARCH
+# TEST
 # -----------------------------------
 
 if __name__ == "__main__":
@@ -486,10 +279,6 @@ if __name__ == "__main__":
 
     results = search_assessments(query)
 
-    print("\nTop Matches:\n")
+    for item in results:
 
-    for i, item in enumerate(results, 1):
-
-        print(f"{i}. {item.get('name')}")
-        print(item)
-        print()
+        print(item.get("name"))
