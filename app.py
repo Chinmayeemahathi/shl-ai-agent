@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 
@@ -7,6 +8,18 @@ from retriever import search_assessments, catalog
 app = FastAPI(
     title="SHL AI Recommendation API",
     version="1.0"
+)
+
+# -----------------------------------
+# CORS FIX
+# -----------------------------------
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # -----------------------------------
@@ -35,6 +48,18 @@ def health():
 
 
 # -----------------------------------
+# ROOT ENDPOINT
+# -----------------------------------
+
+@app.get("/")
+def root():
+
+    return {
+        "message": "SHL AI Recommendation API is running"
+    }
+
+
+# -----------------------------------
 # EXTRACT PREVIOUS RECOMMENDATIONS
 # -----------------------------------
 
@@ -55,7 +80,6 @@ def extract_previous_recommendations(messages):
                 if name.lower() in content:
                     previous_items.append(item)
 
-    # Remove duplicates
     unique = []
     seen = set()
 
@@ -81,36 +105,13 @@ def compare_assessments(query):
 
     matched = []
 
-    important_keywords = [
-        "opq",
-        "opq32r",
-        "verify",
-        "g+",
-        "graduate scenarios",
-        "dsi",
-        "leadership",
-        "hipaa",
-        "excel",
-        "word"
-    ]
-
     for item in catalog:
 
         name = item.get("name", "").lower()
 
-        # Direct match
         if name in query_lower:
             matched.append(item)
-            continue
 
-        # Keyword overlap
-        for keyword in important_keywords:
-
-            if keyword in query_lower and keyword in name:
-                matched.append(item)
-                break
-
-    # Remove duplicates
     unique = []
     seen = set()
 
@@ -131,7 +132,7 @@ def compare_assessments(query):
     a = matched[0]
     b = matched[1]
 
-    comparison = {
+    return {
         "assessment_1": {
             "name": a.get("name"),
             "duration": a.get("duration"),
@@ -146,8 +147,6 @@ def compare_assessments(query):
         }
     }
 
-    return comparison
-
 
 # -----------------------------------
 # CHAT ENDPOINT
@@ -157,10 +156,8 @@ def compare_assessments(query):
 def chat(req: ChatRequest):
 
     latest_message = req.messages[-1].content
-
     latest_message_lower = latest_message.lower().strip()
 
-    # Combine all user messages
     conversation_context = " ".join(
         [
             msg.content
@@ -269,7 +266,7 @@ def chat(req: ChatRequest):
             }
 
     # -----------------------------------
-    # LEADERSHIP CLARIFICATION
+    # VAGUE QUERY DETECTION
     # -----------------------------------
 
     vague_queries = [
@@ -285,7 +282,7 @@ def chat(req: ChatRequest):
     ]
 
     if any(
-        phrase in latest_message_lower
+        phrase == latest_message_lower
         for phrase in vague_queries
     ):
 
@@ -313,23 +310,6 @@ def chat(req: ChatRequest):
 
         results = previous_recommendations.copy()
 
-        # -----------------------------------
-        # ADD PERSONALITY
-        # -----------------------------------
-
-        if "personality" in latest_message_lower:
-
-            for item in catalog:
-
-                if "opq32r" in item.get("name", "").lower():
-
-                    results.append(item)
-                    break
-
-        # -----------------------------------
-        # ADD COGNITIVE
-        # -----------------------------------
-
         if (
             "cognitive" in latest_message_lower
             or "aptitude" in latest_message_lower
@@ -340,28 +320,6 @@ def chat(req: ChatRequest):
                 if "verify interactive g+" in item.get("name", "").lower():
 
                     results.append(item)
-                    break
-
-        # -----------------------------------
-        # ADD SIMULATION
-        # -----------------------------------
-
-        if "simulation" in latest_message_lower:
-
-            for item in catalog:
-
-                name = item.get("name", "").lower()
-
-                if (
-                    "excel 365" in name
-                    or "word 365" in name
-                ):
-
-                    results.append(item)
-
-        # -----------------------------------
-        # ADD SJT
-        # -----------------------------------
 
         if (
             "situational judgement" in latest_message_lower
@@ -373,25 +331,6 @@ def chat(req: ChatRequest):
                 if "graduate scenarios" in item.get("name", "").lower():
 
                     results.append(item)
-
-        # -----------------------------------
-        # REMOVE OPQ
-        # -----------------------------------
-
-        if (
-            "remove opq" in latest_message_lower
-            or "drop opq" in latest_message_lower
-        ):
-
-            results = [
-                item
-                for item in results
-                if "opq" not in item.get("name", "").lower()
-            ]
-
-        # -----------------------------------
-        # REMOVE DUPLICATES
-        # -----------------------------------
 
         unique = []
         seen = set()
