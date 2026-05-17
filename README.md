@@ -1,5 +1,3 @@
-# SHL AI Recommendation System
-
 ---
 title: SHL AI Agent
 
@@ -16,6 +14,7 @@ app_file: app.py
 pinned: false
 
 ---
+# SHL AI Recommendation System
 
 ## 📌 Overview
 This project is a conversational AI-powered recommendation system built for the SHL AI Internship Assignment.
